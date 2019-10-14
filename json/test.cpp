@@ -31,3 +31,4 @@ int main()
 
     return 0;
 }
+// clang++ -std=c++11 test.cpp

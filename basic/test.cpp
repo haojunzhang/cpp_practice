@@ -173,4 +173,4 @@ int main()
     testRandom();
     testSet();
     return 0;
-}
+} // clang++ -std=c++11 test.cpp Ball.cpp
