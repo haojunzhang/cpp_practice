@@ -10,3 +10,9 @@ clang++ -std=c++11 producer_consumer.cpp
 
 -l 指定連結的lib
 clang++ test.cpp -lcurl
+
+openssl
+    library not found for -lcrypto || library not found for -lssl
+    
+    brew install openssl
+    export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl/lib/ 
