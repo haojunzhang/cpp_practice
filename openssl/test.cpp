@@ -1,154 +1,166 @@
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/rsa.h>
-#include <openssl/evp.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <stdio.h>
- 
-int padding = RSA_PKCS1_PADDING;
- 
-RSA * createRSA(unsigned char * key,int public)
+#include <iostream>
+#include <cassert>
+#include <string>
+#include <vector>
+#include "openssl/md5.h"
+#include "openssl/sha.h"
+#include "openssl/des.h"
+#include "openssl/rsa.h"
+#include "openssl/pem.h"
+using namespace std;
+
+string md5(string text)
 {
-    RSA *rsa= NULL;
-    BIO *keybio ;
-    keybio = BIO_new_mem_buf(key, -1);
-    if (keybio==NULL)
+    // 调用md5哈希
+    unsigned char mdStr[33] = {0};
+    MD5((const unsigned char *)text.c_str(), text.length(), mdStr);
+
+    // 哈希后的十六进制串 32字节
+    char buf[65] = {0};
+    char tmp[3] = {0};
+    for (int i = 0; i < 32; i++)
     {
-        printf( "Failed to create key BIO");
-        return 0;
+        sprintf(tmp, "%02x", mdStr[i]);
+        strcat(buf, tmp);
     }
-    if(public)
+    buf[32] = '\0'; // 后面都是0，从32字节截断
+    return std::string(buf);
+}
+
+string sha256(string text)
+{
+    // 调用md5哈希
+    unsigned char mdStr[33] = {0};
+    SHA256((const unsigned char *)text.c_str(), text.length(), mdStr);
+
+    // 哈希后的十六进制串 32字节
+    char buf[65] = {0};
+    char tmp[3] = {0};
+    for (int i = 0; i < 32; i++)
     {
-        rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa,NULL, NULL);
+        sprintf(tmp, "%02x", mdStr[i]);
+        strcat(buf, tmp);
     }
-    else
+    // buf[32] = '\0'; // 后面都是0，从32字节截断
+    return std::string(buf);
+}
+
+static const std::string base64_chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789+/";
+
+static inline bool is_base64(unsigned char c)
+{
+    return (isalnum(c) || (c == '+') || (c == '/'));
+}
+
+std::string base64_encode(unsigned char const *bytes_to_encode, unsigned int in_len)
+{
+    std::string ret;
+    int i = 0;
+    int j = 0;
+    unsigned char char_array_3[3];
+    unsigned char char_array_4[4];
+
+    while (in_len--)
     {
-        rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
+        char_array_3[i++] = *(bytes_to_encode++);
+        if (i == 3)
+        {
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+
+            for (i = 0; (i < 4); i++)
+                ret += base64_chars[char_array_4[i]];
+            i = 0;
+        }
     }
-    if(rsa == NULL)
+
+    if (i)
     {
-        printf( "Failed to create RSA");
+        for (j = i; j < 3; j++)
+            char_array_3[j] = '\0';
+
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
+
+        for (j = 0; (j < i + 1); j++)
+            ret += base64_chars[char_array_4[j]];
+
+        while ((i++ < 3))
+            ret += '=';
     }
- 
-    return rsa;
+
+    return ret;
 }
- 
-int public_encrypt(unsigned char * data,int data_len,unsigned char * key, unsigned char *encrypted)
+
+std::string base64_decode(std::string const &encoded_string)
 {
-    RSA * rsa = createRSA(key,1);
-    int result = RSA_public_encrypt(data_len,data,encrypted,rsa,padding);
-    return result;
+    int in_len = encoded_string.size();
+    int i = 0;
+    int j = 0;
+    int in_ = 0;
+    unsigned char char_array_4[4], char_array_3[3];
+    std::string ret;
+
+    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
+    {
+        char_array_4[i++] = encoded_string[in_];
+        in_++;
+        if (i == 4)
+        {
+            for (i = 0; i < 4; i++)
+                char_array_4[i] = base64_chars.find(char_array_4[i]);
+
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+            for (i = 0; (i < 3); i++)
+                ret += char_array_3[i];
+            i = 0;
+        }
+    }
+
+    if (i)
+    {
+        for (j = i; j < 4; j++)
+            char_array_4[j] = 0;
+
+        for (j = 0; j < 4; j++)
+            char_array_4[j] = base64_chars.find(char_array_4[j]);
+
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+        for (j = 0; (j < i - 1); j++)
+            ret += char_array_3[j];
+    }
+
+    return ret;
 }
-int private_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted)
+
+int main()
 {
-    RSA * rsa = createRSA(key,0);
-    int  result = RSA_private_decrypt(data_len,enc_data,decrypted,rsa,padding);
-    return result;
-}
- 
- 
-int private_encrypt(unsigned char * data,int data_len,unsigned char * key, unsigned char *encrypted)
-{
-    RSA * rsa = createRSA(key,0);
-    int result = RSA_private_encrypt(data_len,data,encrypted,rsa,padding);
-    return result;
-}
-int public_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted)
-{
-    RSA * rsa = createRSA(key,1);
-    int  result = RSA_public_decrypt(data_len,enc_data,decrypted,rsa,padding);
-    return result;
-}
- 
-void printLastError(char *msg)
-{
-    char * err = malloc(130);;
-    ERR_load_crypto_strings();
-    ERR_error_string(ERR_get_error(), err);
-    printf("%s ERROR: %s\n",msg, err);
-    free(err);
-}
- 
-int main(){
- 
-  char plainText[2048/8] = "Hello this is Ravi"; //key length : 2048
- 
- char publicKey[]="-----BEGIN PUBLIC KEY-----\n"\
-"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy8Dbv8prpJ/0kKhlGeJY\n"\
-"ozo2t60EG8L0561g13R29LvMR5hyvGZlGJpmn65+A4xHXInJYiPuKzrKUnApeLZ+\n"\
-"vw1HocOAZtWK0z3r26uA8kQYOKX9Qt/DbCdvsF9wF8gRK0ptx9M6R13NvBxvVQAp\n"\
-"fc9jB9nTzphOgM4JiEYvlV8FLhg9yZovMYd6Wwf3aoXK891VQxTr/kQYoq1Yp+68\n"\
-"i6T4nNq7NWC+UNVjQHxNQMQMzU6lWCX8zyg3yH88OAQkUXIXKfQ+NkvYQ1cxaMoV\n"\
-"PpY72+eVthKzpMeyHkBn7ciumk5qgLTEJAfWZpe4f4eFZj/Rc8Y8Jj2IS5kVPjUy\n"\
-"wQIDAQAB\n"\
-"-----END PUBLIC KEY-----\n";
-  
- char privateKey[]="-----BEGIN RSA PRIVATE KEY-----\n"\
-"MIIEowIBAAKCAQEAy8Dbv8prpJ/0kKhlGeJYozo2t60EG8L0561g13R29LvMR5hy\n"\
-"vGZlGJpmn65+A4xHXInJYiPuKzrKUnApeLZ+vw1HocOAZtWK0z3r26uA8kQYOKX9\n"\
-"Qt/DbCdvsF9wF8gRK0ptx9M6R13NvBxvVQApfc9jB9nTzphOgM4JiEYvlV8FLhg9\n"\
-"yZovMYd6Wwf3aoXK891VQxTr/kQYoq1Yp+68i6T4nNq7NWC+UNVjQHxNQMQMzU6l\n"\
-"WCX8zyg3yH88OAQkUXIXKfQ+NkvYQ1cxaMoVPpY72+eVthKzpMeyHkBn7ciumk5q\n"\
-"gLTEJAfWZpe4f4eFZj/Rc8Y8Jj2IS5kVPjUywQIDAQABAoIBADhg1u1Mv1hAAlX8\n"\
-"omz1Gn2f4AAW2aos2cM5UDCNw1SYmj+9SRIkaxjRsE/C4o9sw1oxrg1/z6kajV0e\n"\
-"N/t008FdlVKHXAIYWF93JMoVvIpMmT8jft6AN/y3NMpivgt2inmmEJZYNioFJKZG\n"\
-"X+/vKYvsVISZm2fw8NfnKvAQK55yu+GRWBZGOeS9K+LbYvOwcrjKhHz66m4bedKd\n"\
-"gVAix6NE5iwmjNXktSQlJMCjbtdNXg/xo1/G4kG2p/MO1HLcKfe1N5FgBiXj3Qjl\n"\
-"vgvjJZkh1as2KTgaPOBqZaP03738VnYg23ISyvfT/teArVGtxrmFP7939EvJFKpF\n"\
-"1wTxuDkCgYEA7t0DR37zt+dEJy+5vm7zSmN97VenwQJFWMiulkHGa0yU3lLasxxu\n"\
-"m0oUtndIjenIvSx6t3Y+agK2F3EPbb0AZ5wZ1p1IXs4vktgeQwSSBdqcM8LZFDvZ\n"\
-"uPboQnJoRdIkd62XnP5ekIEIBAfOp8v2wFpSfE7nNH2u4CpAXNSF9HsCgYEA2l8D\n"\
-"JrDE5m9Kkn+J4l+AdGfeBL1igPF3DnuPoV67BpgiaAgI4h25UJzXiDKKoa706S0D\n"\
-"4XB74zOLX11MaGPMIdhlG+SgeQfNoC5lE4ZWXNyESJH1SVgRGT9nBC2vtL6bxCVV\n"\
-"WBkTeC5D6c/QXcai6yw6OYyNNdp0uznKURe1xvMCgYBVYYcEjWqMuAvyferFGV+5\n"\
-"nWqr5gM+yJMFM2bEqupD/HHSLoeiMm2O8KIKvwSeRYzNohKTdZ7FwgZYxr8fGMoG\n"\
-"PxQ1VK9DxCvZL4tRpVaU5Rmknud9hg9DQG6xIbgIDR+f79sb8QjYWmcFGc1SyWOA\n"\
-"SkjlykZ2yt4xnqi3BfiD9QKBgGqLgRYXmXp1QoVIBRaWUi55nzHg1XbkWZqPXvz1\n"\
-"I3uMLv1jLjJlHk3euKqTPmC05HoApKwSHeA0/gOBmg404xyAYJTDcCidTg6hlF96\n"\
-"ZBja3xApZuxqM62F6dV4FQqzFX0WWhWp5n301N33r0qR6FumMKJzmVJ1TA8tmzEF\n"\
-"yINRAoGBAJqioYs8rK6eXzA8ywYLjqTLu/yQSLBn/4ta36K8DyCoLNlNxSuox+A5\n"\
-"w6z2vEfRVQDq4Hm4vBzjdi3QfYLNkTiTqLcvgWZ+eX44ogXtdTDO7c+GeMKWz4XX\n"\
-"uJSUVL5+CVjKLjZEJ6Qc2WZLl94xSwL71E41H4YciVnSCQxVc4Jw\n"\
-"-----END RSA PRIVATE KEY-----\n";
- 
-    
-unsigned char  encrypted[4098]={};
-unsigned char decrypted[4098]={};
- 
-int encrypted_length= public_encrypt(plainText,strlen(plainText),publicKey,encrypted);
-if(encrypted_length == -1)
-{
-    printLastError("Public Encrypt failed ");
-    exit(0);
-}
-printf("Encrypted length =%d\n",encrypted_length);
- 
-int decrypted_length = private_decrypt(encrypted,encrypted_length,privateKey, decrypted);
-if(decrypted_length == -1)
-{
-    printLastError("Private Decrypt failed ");
-    exit(0);
-}
-printf("Decrypted Text =%s\n",decrypted);
-printf("Decrypted Length =%d\n",decrypted_length);
- 
- 
-encrypted_length= private_encrypt(plainText,strlen(plainText),privateKey,encrypted);
-if(encrypted_length == -1)
-{
-    printLastError("Private Encrypt failed");
-    exit(0);
-}
-printf("Encrypted length =%d\n",encrypted_length);
- 
-decrypted_length = public_decrypt(encrypted,encrypted_length,publicKey, decrypted);
-if(decrypted_length == -1)
-{
-    printLastError("Public Decrypt failed");
-    exit(0);
-}
-printf("Decrypted Text =%s\n",decrypted);
-printf("Decrypted Length =%d\n",decrypted_length);
- 
-}
+    string text = "xxx";
+
+    cout << "text:" << text << endl;
+
+    cout << "md5:" << md5(text) << endl;
+
+    cout << "sha256:" << sha256(text) << endl;
+
+    string base64_encode_text = base64_encode(reinterpret_cast<const unsigned char *>(text.c_str()), text.length());
+
+    cout << "base64encode:" << base64_encode_text << endl;
+
+    cout << "base64decode:" << base64_decode(base64_encode_text) << endl;
+
+    return 0;
+} // clang++ test.cpp -lssl -lcrypto
