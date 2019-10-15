@@ -36,4 +36,4 @@ int main()
     mThread1.join();
     mThread2.join();
     return 0;
-}
+} // clang++ -std=c++11 basic_thread.cpp

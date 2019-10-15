@@ -71,4 +71,4 @@ int main()
     t6.join();
     std::cout << "Final value of n is " << n << '\n';
     std::cout << "Final value of foo::n is " << f.n << '\n';
-}
+} // clang++ -std=c++11 other1.cpp

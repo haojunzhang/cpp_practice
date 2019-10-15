@@ -98,4 +98,4 @@ int main()
     mProducer.join();
     mConsumer.join();
     return 0;
-}
+} // clang++ -std=c++11 producer_consumer.cpp
