@@ -1,166 +1,28 @@
 #include <iostream>
-#include <cassert>
 #include <string>
-#include <vector>
-#include "openssl/md5.h"
-#include "openssl/sha.h"
-#include "openssl/des.h"
-#include "openssl/rsa.h"
-#include "openssl/pem.h"
+#include "OpenSSLUtils.h"
 using namespace std;
-
-string md5(string text)
-{
-    // 调用md5哈希
-    unsigned char mdStr[33] = {0};
-    MD5((const unsigned char *)text.c_str(), text.length(), mdStr);
-
-    // 哈希后的十六进制串 32字节
-    char buf[65] = {0};
-    char tmp[3] = {0};
-    for (int i = 0; i < 32; i++)
-    {
-        sprintf(tmp, "%02x", mdStr[i]);
-        strcat(buf, tmp);
-    }
-    buf[32] = '\0'; // 后面都是0，从32字节截断
-    return std::string(buf);
-}
-
-string sha256(string text)
-{
-    // 调用md5哈希
-    unsigned char mdStr[33] = {0};
-    SHA256((const unsigned char *)text.c_str(), text.length(), mdStr);
-
-    // 哈希后的十六进制串 32字节
-    char buf[65] = {0};
-    char tmp[3] = {0};
-    for (int i = 0; i < 32; i++)
-    {
-        sprintf(tmp, "%02x", mdStr[i]);
-        strcat(buf, tmp);
-    }
-    // buf[32] = '\0'; // 后面都是0，从32字节截断
-    return std::string(buf);
-}
-
-static const std::string base64_chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789+/";
-
-static inline bool is_base64(unsigned char c)
-{
-    return (isalnum(c) || (c == '+') || (c == '/'));
-}
-
-std::string base64_encode(unsigned char const *bytes_to_encode, unsigned int in_len)
-{
-    std::string ret;
-    int i = 0;
-    int j = 0;
-    unsigned char char_array_3[3];
-    unsigned char char_array_4[4];
-
-    while (in_len--)
-    {
-        char_array_3[i++] = *(bytes_to_encode++);
-        if (i == 3)
-        {
-            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-            char_array_4[3] = char_array_3[2] & 0x3f;
-
-            for (i = 0; (i < 4); i++)
-                ret += base64_chars[char_array_4[i]];
-            i = 0;
-        }
-    }
-
-    if (i)
-    {
-        for (j = i; j < 3; j++)
-            char_array_3[j] = '\0';
-
-        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-        char_array_4[3] = char_array_3[2] & 0x3f;
-
-        for (j = 0; (j < i + 1); j++)
-            ret += base64_chars[char_array_4[j]];
-
-        while ((i++ < 3))
-            ret += '=';
-    }
-
-    return ret;
-}
-
-std::string base64_decode(std::string const &encoded_string)
-{
-    int in_len = encoded_string.size();
-    int i = 0;
-    int j = 0;
-    int in_ = 0;
-    unsigned char char_array_4[4], char_array_3[3];
-    std::string ret;
-
-    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
-    {
-        char_array_4[i++] = encoded_string[in_];
-        in_++;
-        if (i == 4)
-        {
-            for (i = 0; i < 4; i++)
-                char_array_4[i] = base64_chars.find(char_array_4[i]);
-
-            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-            for (i = 0; (i < 3); i++)
-                ret += char_array_3[i];
-            i = 0;
-        }
-    }
-
-    if (i)
-    {
-        for (j = i; j < 4; j++)
-            char_array_4[j] = 0;
-
-        for (j = 0; j < 4; j++)
-            char_array_4[j] = base64_chars.find(char_array_4[j]);
-
-        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-        for (j = 0; (j < i - 1); j++)
-            ret += char_array_3[j];
-    }
-
-    return ret;
-}
 
 int main()
 {
-    string text = "xxx";
+    string text = "my secret";
 
     cout << "text:" << text << endl;
 
-    cout << "md5:" << md5(text) << endl;
+    cout << "md5:" << OpenSSLUtils::md5(text) << endl;
 
-    cout << "sha256:" << sha256(text) << endl;
+    cout << "sha256:" << OpenSSLUtils::sha256(text) << endl;
 
-    string base64_encode_text = base64_encode(reinterpret_cast<const unsigned char *>(text.c_str()), text.length());
+    string base64_encode_text = OpenSSLUtils::base64_encode(text);
 
     cout << "base64encode:" << base64_encode_text << endl;
 
-    cout << "base64decode:" << base64_decode(base64_encode_text) << endl;
+    cout << "base64decode:" << OpenSSLUtils::base64_decode(base64_encode_text) << endl;
+
+    string enc = OpenSSLUtils::aes_encrypt(text);
+    cout << "aes encrypt:" << enc << endl;
+    string dec = OpenSSLUtils::aes_decrypt(enc);
+    cout << "aes decrypt:" << dec << endl;
 
     return 0;
-} // clang++ test.cpp -lssl -lcrypto
+} // clang++ test.cpp OpenSSLUtils.cpp -lssl -lcrypto
