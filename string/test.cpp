@@ -35,5 +35,13 @@ int main()
     replace_all(s4, replace_from, replace_to);
     cout << "replace(\",\", \".\"):" << s4 << endl;
 
+    // Upper & Lower
+    string str1 = "Hello World";
+    string str2 = "Hello World";
+    transform(str1.begin(), str1.end(), str1.begin(), ::toupper);
+    transform(str2.begin(), str2.end(), str2.begin(), ::tolower);
+    cout << "Upper:" << str1 << endl;
+    cout << "Lower:" << str2 << endl;
+
     return 0;
 } // clang++ test.cpp
