@@ -29,4 +29,4 @@ int main()
     cout << "now:" << now() << endl;
     cout << "unix time:" << unix_time_milliseconds() << " ms" << endl;
     cout << "unix time:" << unix_time_seconds() << " s" << endl;
-}
+} // clang++ test.cpp
