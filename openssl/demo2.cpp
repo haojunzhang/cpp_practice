@@ -1,4 +1,4 @@
-#include <iostream>
+// https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
@@ -131,7 +131,6 @@ int main(void)
 
     /* Do something useful with the ciphertext here */
     printf("Ciphertext is:\n");
-    std::cout << ciphertext << std::endl;
     BIO_dump_fp(stdout, (const char *)ciphertext, ciphertext_len);
 
     /* Decrypt the ciphertext */
@@ -146,4 +145,4 @@ int main(void)
     printf("%s\n", decryptedtext);
 
     return 0;
-} // clang++ other2.cpp -lssl -lcrypto
+} // clang++ demo2.cpp -lssl -lcrypto
