@@ -5,14 +5,11 @@ using namespace std;
 void replace_all(string &subject, string &search, string &replace)
 {
     size_t pos = 0;
-    cout << "pos:" << pos << endl;
     while ((pos = subject.find(search, pos)) != subject.npos)
     {
         subject.replace(pos, search.length(), replace);
         pos += replace.length();
-        cout << "pos:" << pos << endl;
     }
-    cout << "pos:" << pos << endl;
 }
 int main()
 {
@@ -39,4 +36,4 @@ int main()
     cout << "replace(\",\", \".\"):" << s4 << endl;
 
     return 0;
-}
+} // clang++ test.cpp
