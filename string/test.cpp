@@ -1,16 +1,9 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
+#include "../utils/StringUtils.h"
 using namespace std;
-void replace_all(string &subject, string &search, string &replace)
-{
-    size_t pos = 0;
-    while ((pos = subject.find(search, pos)) != subject.npos)
-    {
-        subject.replace(pos, search.length(), replace);
-        pos += replace.length();
-    }
-}
+
 int main()
 {
 
@@ -32,8 +25,7 @@ int main()
     string s4 = "123,123,123,123";
     string replace_from = ",";
     string replace_to = ".";
-    replace_all(s4, replace_from, replace_to);
-    cout << "replace(\",\", \".\"):" << s4 << endl;
+    cout << "replace(\",\", \".\"):" << StringUtils::replace_all(s4, replace_from, replace_to) << endl;
 
     // Upper & Lower
     string str1 = "Hello World";
@@ -44,4 +36,4 @@ int main()
     cout << "Lower:" << str2 << endl;
 
     return 0;
-} // clang++ test.cpp
+} // clang++ test.cpp StringUtils.cpp

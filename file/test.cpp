@@ -3,69 +3,10 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <stdio.h>
+
+#include "../utils/FileUtils.h"
+
 using namespace std;
-
-bool is_exist(string file_name)
-{
-    struct stat buf;
-    if (stat(file_name.c_str(), &buf) != -1)
-    {
-        return true;
-    }
-    return false;
-}
-
-string read_file(string file_name)
-{
-    fstream file;
-    file.open(file_name, ios::in);
-
-    if (!file)
-    {
-        cout << strerror(errno) << endl;
-        exit(1);
-    }
-
-    string result = "";
-
-    char buffer[1024];
-
-    while (!file.eof())
-    {
-        file.getline(buffer, sizeof(buffer));
-
-        // No next line at first
-        if (result.length() == 0)
-        {
-            result += buffer;
-        }
-        else
-        {
-            result += "\n";
-            result += buffer;
-        }
-    }
-
-    file.close();
-
-    return result;
-}
-
-bool write_file(string file_name, string text)
-{
-    fstream file;
-    file.open(file_name, ios::out);
-
-    if (!file)
-    {
-        cout << strerror(errno) << endl;
-        exit(1);
-        return false;
-    }
-    file << text;
-    file.close();
-    return is_exist(file_name);
-}
 
 int main()
 {
@@ -75,16 +16,17 @@ int main()
     string data = "data123";
 
     // Read file
-    cout << "Exist:" << (is_exist(read_file_name) ? "Y" : "N") << endl;
-    cout << read_file(read_file_name) << endl;
+    cout << "Exist:" << (FileUtils::is_exist(read_file_name) ? "Y" : "N") << endl;
+    string read_str = FileUtils::read_file(read_file_name);
+    cout << read_str << endl;
 
     // Write file
-    cout << (write_file(write_file_name1, data) ? "Write success" : "Write fail") << endl;
-    cout << (write_file(write_file_name2, data) ? "Write success" : "Write fail") << endl;
+    cout << (FileUtils::write_file(write_file_name1, data) ? "Write success" : "Write fail") << endl;
+    cout << (FileUtils::write_file(write_file_name2, data) ? "Write success" : "Write fail") << endl;
 
     // Delete file
-    cout << (remove(write_file_name2.c_str()) == 0 ? "Delete success" : "Delete fail") << endl;
-    cout << (remove(write_file_name2.c_str()) == 0 ? "Delete success" : "Delete fail") << endl;
+    cout << (FileUtils::remove(write_file_name2) ? "Delete success" : "Delete fail") << endl;
+    cout << (FileUtils::remove(write_file_name2) ? "Delete success" : "Delete fail") << endl;
 
     return 0;
-} // clang++ test.cpp
+} // clang++ test.cpp ../utils/FileUtils.cpp
