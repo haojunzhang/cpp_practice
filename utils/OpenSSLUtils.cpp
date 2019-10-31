@@ -278,61 +278,68 @@ std::string OpenSSLUtils::aes_decrypt(std::string base64_encode_text)
     return reinterpret_cast<char *>(decryptedtext);
 }
 
-std::string OpenSSLUtils::rsa_encrypt(std::string text, std::string public_key)
+RSA *get_public_rsa_from_str(std::string public_key)
 {
-    std::string strRet;
     RSA *rsa = NULL;
     BIO *keybio = BIO_new_mem_buf((unsigned char *)public_key.c_str(), -1);
-    // 此处有三种方法
-    // 1, 读取内存里生成的密钥对，再从内存生成rsa
-    // 2, 读取磁盘里生成的密钥对文本文件，在从内存生成rsa
-    // 3，直接从读取文件指针生成rsa
-    RSA *pRSAPublicKey = RSA_new();
     rsa = PEM_read_bio_RSAPublicKey(keybio, &rsa, NULL, NULL);
 
-    int len = RSA_size(rsa);
-    char *encryptedText = (char *)malloc(len + 1);
-    memset(encryptedText, 0, len + 1);
-
-    // 加密函数
-    int ret = RSA_public_encrypt(text.length(), (const unsigned char *)text.c_str(), (unsigned char *)encryptedText, rsa, RSA_PKCS1_PADDING);
-    if (ret >= 0)
-        strRet = std::string(encryptedText, ret);
-
-    // 释放内存
-    free(encryptedText);
+    // release memory
     BIO_free_all(keybio);
+    return rsa;
+}
+
+RSA *get_private_rsa_from_str(std::string private_key)
+{
+    RSA *rsa = RSA_new();
+    BIO *keybio = BIO_new_mem_buf((unsigned char *)private_key.c_str(), -1);
+    rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa, NULL, NULL);
+
+    // release memory
+    BIO_free_all(keybio);
+    return rsa;
+}
+
+std::string OpenSSLUtils::rsa_encrypt(std::string text, std::string public_key)
+{
+    std::string str_ret;
+
+    RSA *rsa = get_public_rsa_from_str(public_key);
+
+    int len = RSA_size(rsa);
+    char *encrypted_text = (char *)malloc(len + 1);
+    memset(encrypted_text, 0, len + 1);
+
+    // do encrypt
+    int ret = RSA_public_encrypt(text.length(), (const unsigned char *)text.c_str(), (unsigned char *)encrypted_text, rsa, RSA_PKCS1_PADDING);
+    if (ret >= 0)
+        str_ret = std::string(encrypted_text, ret);
+
+    // release memory
+    free(encrypted_text);
     RSA_free(rsa);
 
-    return strRet;
+    return str_ret;
 }
 
 std::string OpenSSLUtils::rsa_decrypt(std::string text, std::string private_key)
 {
-    std::string strRet;
-    RSA *rsa = RSA_new();
-    BIO *keybio;
-    keybio = BIO_new_mem_buf((unsigned char *)private_key.c_str(), -1);
-
-    // 此处有三种方法
-    // 1, 读取内存里生成的密钥对，再从内存生成rsa
-    // 2, 读取磁盘里生成的密钥对文本文件，在从内存生成rsa
-    // 3，直接从读取文件指针生成rsa
-    rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa, NULL, NULL);
+    std::string str_ret;
+    RSA *rsa = get_private_rsa_from_str(private_key);
 
     int len = RSA_size(rsa);
-    char *decryptedText = (char *)malloc(len + 1);
-    memset(decryptedText, 0, len + 1);
+    char *decrypted_text = (char *)malloc(len + 1);
+    memset(decrypted_text, 0, len + 1);
 
-    // 解密函数
-    int ret = RSA_private_decrypt(text.length(), (const unsigned char *)text.c_str(), (unsigned char *)decryptedText, rsa, RSA_PKCS1_PADDING);
+    // do decrypt
+    int ret = RSA_private_decrypt(text.length(), (const unsigned char *)text.c_str(), (unsigned char *)decrypted_text, rsa, RSA_PKCS1_PADDING);
     if (ret >= 0)
-        strRet = std::string(decryptedText, ret);
+        str_ret = std::string(decrypted_text, ret);
 
-    // 释放内存
-    free(decryptedText);
-    BIO_free_all(keybio);
+    // release memory
+    free(decrypted_text);
     RSA_free(rsa);
 
-    return strRet;
+    return str_ret;
+}
 }
