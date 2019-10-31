@@ -10,17 +10,16 @@
 #include "openssl/conf.h"
 #include "openssl/evp.h"
 #include "openssl/err.h"
-using namespace std;
 
 class OpenSSLUtils
 {
 public:
-    static string md5(string);
-    static string sha256(string);
-    static string base64_encode(string);
-    static string base64_decode(string);
-    static string aes_encrypt(string);
-    static string aes_decrypt(string);
-    static string rsa_encrypt(string, string);
-    static string rsa_decrypt(string, string);
+    static std::string md5(std::string);
+    static std::string sha256(std::string);
+    static std::string base64_encode(std::string);
+    static std::string base64_decode(std::string);
+    static std::string aes_encrypt(std::string);
+    static std::string aes_decrypt(std::string);
+    static std::string rsa_encrypt(std::string, std::string);
+    static std::string rsa_decrypt(std::string, std::string);
 };
