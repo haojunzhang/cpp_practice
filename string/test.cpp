@@ -35,5 +35,12 @@ int main()
     cout << "Upper:" << str1 << endl;
     cout << "Lower:" << str2 << endl;
 
+    // iterator string
+    string s5 = "abcde";
+    for (int i = 0; i < s5.length(); i++)
+    {
+        cout << s5[i] << endl;
+    }
+
     return 0;
-} // clang++ test.cpp StringUtils.cpp
+} // clang++ test.cpp ../utils/StringUtils.cpp
